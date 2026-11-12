@@ -1,6 +1,6 @@
 var KEY='punpun-allowance-diary';
 var CATS=['school','essentials','wants','other'];
-function defaults(){return{months:{},saves:[],goal:0,list:[],days:{},bank:[],lim:{daily:0,schoolDay:0,schoolMonth:0,essMonth:0,wantsMonth:0,saveMonth:0,ebMonth:0}}}
+function defaults(){return{months:{},saves:[],goal:0,list:[],days:{},bank:[],piggy:[],lim:{saveDay:0,daily:0,schoolDay:0,schoolMonth:0,essMonth:0,wantsMonth:0,saveMonth:0,ebMonth:0}}}
 function load(){var d=defaults(),o={},k;try{var r=localStorage.getItem(KEY);if(r)o=JSON.parse(r)||{}}catch(e){}
  for(k in d){if(o[k]!==undefined&&o[k]!==null)d[k]=o[k]}
  d.lim=Object.assign(defaults().lim,o.lim||{});return d}
@@ -43,7 +43,7 @@ function hist(a,act,sign){var h='';a.slice().sort(function(x,y){return x.date<y.
 
 function viewSpend(){
  var m=M(),L=S.lim,all=allSp(),ms=inMonth(all,ym),spent=sum(ms),t=dstr(new Date()),ts=onDate(all,t);
- var inc=m.received?eff(m):0,savedM=sum(inMonth(S.saves,ym)),bk=bankBal(inMonth(S.bank,ym));
+ var inc=m.received?eff(m):0,savedM=sum(inMonth(S.saves,ym)),bk=bankBal(inMonth(S.bank,ym))+sum(inMonth(S.piggy,ym));
  var left=inc-spent-savedM-bk,mood=left<0?'low':(m.received?'ok':'none');
  var q=left<0?'…it’s all gone.':!m.received?'no allowance yet. waiting.':left<inc*0.2?'getting thin.':'still okay.';
  var n=daysIn(ym),per=[],i,bars='',list='',by={};
@@ -67,10 +67,10 @@ function viewSpend(){
 
 function viewLimits(){
  var L=S.lim,all=allSp(),ms=inMonth(all,ym),t=dstr(new Date()),ts=onDate(all,t);
- var F=[['daily','allowance per day'],['schoolDay','school allowance per day'],['schoolMonth','school allowance per month'],['essMonth','essentials allowance per month'],['wantsMonth','wants allowance per month'],['saveMonth','savings goal per month'],['ebMonth','emergency money deposit per month']];
+ var F=[['daily','allowance per day'],['schoolDay','school allowance per day'],['schoolMonth','school allowance per month'],['essMonth','essentials allowance per month'],['wantsMonth','wants allowance per month'],['saveMonth','savings goal per month'],['saveDay','piggy bank goal per day'],['ebMonth','emergency money deposit per month']];
  return nav()+'<div class="card"><b>my limits</b><div class="sub">0 or blank = no limit</div><div class="fields">'+F.map(function(f){return'<div><div class="lbl">'+f[1]+'</div><input type="number" inputmode="decimal" data-lim="'+f[0]+'" placeholder="0" value="'+(L[f[0]]||'')+'"></div>'}).join('')+'</div></div>'+
  '<div class="card"><div class="lbl" style="margin-bottom:10px">spending (today · '+monthName()+')</div>'+meter('allowance today',sum(ts),L.daily)+meter('school today',sum(byCat(ts,'school')),L.schoolDay)+meter('school this month',sum(byCat(ms,'school')),L.schoolMonth)+meter('essentials this month',sum(byCat(ms,'essentials')),L.essMonth)+meter('wants this month',sum(byCat(ms,'wants')),L.wantsMonth)+'</div>'+
- '<div class="card"><div class="lbl" style="margin-bottom:10px">saving</div>'+meter('emergency deposits this month',sum(inMonth(S.bank.filter(function(x){return x.type==='in'}),ym)),L.ebMonth,1)+meter('saved this month',sum(inMonth(S.saves,ym)),L.saveMonth,1)+'</div>'
+ '<div class="card"><div class="lbl" style="margin-bottom:10px">saving</div>'+meter('piggy bank today',sum(onDate(S.piggy,t)),L.saveDay,1)+meter('emergency deposits this month',sum(inMonth(S.bank.filter(function(x){return x.type==='in'}),ym)),L.ebMonth,1)+meter('saved this month',sum(inMonth(S.saves,ym)),L.saveMonth,1)+'</div>'
 }
 
 function viewSave(){
@@ -81,6 +81,19 @@ function viewSave(){
  (g?'<div class="prog"><i style="width:'+pc+'%"></i></div><div class="row"><span class="sub">'+Math.round(pc)+'%</span><span class="sub num">'+money(Math.max(0,g-tot))+' to go</span></div>':'')+'</div>'+
  '<div class="card"><b>put some away</b><div class="fields"><div><div class="lbl">amount</div><input type="number" inputmode="decimal" id="vAmt" placeholder="0"></div><div><div class="lbl">note</div><input type="text" id="vNote" placeholder="piggy bank"></div></div><button data-act="addSave">+ save it</button></div>'+
  '<div class="card"><div class="lbl">history</div>'+(hist(S.saves,'delSave')||'<div class="empty">nothing here yet.</div>')+'</div>'
+}
+
+function viewPiggy(){
+ var t=dstr(new Date()),tot=sum(S.piggy),tdy=sum(onDate(S.piggy,t)),by={},list='';
+ S.piggy.forEach(function(s){(by[s.date]=by[s.date]||[]).push(s)});
+ Object.keys(by).sort().reverse().forEach(function(k){
+  list+='<div class="day"><div class="dh"><span>'+dayLabel(k)+'</span><span class="num">'+money(sum(by[k]))+'</span></div>';
+  by[k].forEach(function(s){list+='<div class="it"><span>'+esc(s.note||'saved')+'</span><span><span class="num">'+money(s.amt)+'</span><button class="x" data-act="delPiggy" data-id="'+s.id+'">✕</button></span></div>'});
+  list+='</div>'});
+ return hero(tot>0?'ok':'none','in my piggy bank',tot,'saved today: '+money(tdy))+
+ '<div class="card">'+meter('saved today',tdy,S.lim.saveDay,1)+'<div class="sub">daily goal is set in the limits tab</div></div>'+
+ '<div class="card"><b>drop a coin</b><div class="fields"><div><div class="lbl">amount</div><input type="number" inputmode="decimal" id="pAmt" placeholder="0"></div><div><div class="lbl">date</div><input type="date" id="pDate" value="'+t+'"></div><div class="full"><div class="lbl">note</div><input type="text" id="pNote" placeholder="coin jar"></div></div><button data-act="addPiggy">+ save for the day</button></div>'+
+ '<div class="card"><div class="lbl">saved each day</div>'+(list||'<div class="empty">no coins yet.</div>')+'</div>'
 }
 
 function viewBank(){
@@ -110,7 +123,7 @@ function viewList(){
  '<div class="card"><div class="row"><span class="lbl">'+left+' left</span><span class="lbl num">'+(open?'needs '+money(open):'')+'</span></div>'+(list||'<div class="empty">the list is empty.</div>')+'</div>'
 }
 
-var VIEWS={spend:viewSpend,limits:viewLimits,save:viewSave,bank:viewBank,days:viewDays,list:viewList};
+var VIEWS={spend:viewSpend,limits:viewLimits,save:viewSave,piggy:viewPiggy,bank:viewBank,days:viewDays,list:viewList};
 function render(){
  var y=window.scrollY;
  document.getElementById('app').innerHTML='<div class="top"><div><h1>allowance diary</h1><div class="sub">small money, small notes</div></div><div class="jp">おこづかい</div></div>'+VIEWS[tab]();
@@ -128,6 +141,8 @@ document.addEventListener('click',function(e){
   (S.months[k]||(S.months[k]=blank())).spends.push({id:uid(),amt:n,note:val('sNote'),date:d,cat:val('sCat')||'other'})}
  else if(a==='delSpend'){Object.keys(S.months).forEach(function(x){S.months[x].spends=S.months[x].spends.filter(function(s){return s.id!==id})})}
  else if(a==='addSave'){n=parseFloat(val('vAmt'));if(!(n>0))return;S.saves.push({id:uid(),amt:n,note:val('vNote'),date:dstr(new Date())})}
+ else if(a==='addPiggy'){n=parseFloat(val('pAmt'));if(!(n>0))return;S.piggy.push({id:uid(),amt:n,note:val('pNote'),date:val('pDate')||dstr(new Date())})}
+ else if(a==='delPiggy')S.piggy=S.piggy.filter(function(s){return s.id!==id});
  else if(a==='delSave')S.saves=S.saves.filter(function(s){return s.id!==id});
  else if(a==='addBankIn'||a==='addBankOut'){n=parseFloat(val('bAmt'));if(!(n>0))return;var out=a==='addBankOut';
   if(out&&n>bankBal(S.bank))return;S.bank.push({id:uid(),amt:n,type:out?'out':'in',note:val('bNote')||(out?'taken out':'put in'),date:dstr(new Date())})}
@@ -149,4 +164,3 @@ document.addEventListener('change',function(e){
 });
 render();
 if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})})}
-  
