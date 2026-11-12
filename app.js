@@ -1,6 +1,6 @@
 var KEY='punpun-allowance-diary';
 var CATS=['school','essentials','wants','other'];
-function defaults(){return{months:{},saves:[],goal:0,list:[],days:{},bank:[],lim:{daily:0,schoolDay:0,schoolMonth:0,essMonth:0,wantsDay:0,saveMonth:0,saveDay:0}}}
+function defaults(){return{months:{},saves:[],goal:0,list:[],days:{},bank:[],lim:{daily:0,schoolDay:0,schoolMonth:0,essMonth:0,wantsMonth:0,saveMonth:0,saveDay:0}}}
 function load(){var d=defaults(),o={},k;try{var r=localStorage.getItem(KEY);if(r)o=JSON.parse(r)||{}}catch(e){}
  for(k in d){if(o[k]!==undefined&&o[k]!==null)d[k]=o[k]}
  d.lim=Object.assign(defaults().lim,o.lim||{});return d}
@@ -67,9 +67,9 @@ function viewSpend(){
 
 function viewLimits(){
  var L=S.lim,all=allSp(),ms=inMonth(all,ym),t=dstr(new Date()),ts=onDate(all,t);
- var F=[['daily','allowance per day'],['schoolDay','school allowance per day'],['schoolMonth','school allowance per month'],['essMonth','essentials max per month'],['wantsDay','wants max per day'],['saveMonth','savings goal per month'],['saveDay','savings goal per day']];
+ var F=[['daily','allowance per day'],['schoolDay','school allowance per day'],['schoolMonth','school allowance per month'],['essMonth','essentials max per month'],['wantsMonth','wants allowance per month'],['saveMonth','savings goal per month'],['saveDay','savings goal per day']];
  return nav()+'<div class="card"><b>my limits</b><div class="sub">0 or blank = no limit</div><div class="fields">'+F.map(function(f){return'<div><div class="lbl">'+f[1]+'</div><input type="number" inputmode="decimal" data-lim="'+f[0]+'" placeholder="0" value="'+(L[f[0]]||'')+'"></div>'}).join('')+'</div></div>'+
- '<div class="card"><div class="lbl" style="margin-bottom:10px">spending (today · '+monthName()+')</div>'+meter('allowance today',sum(ts),L.daily)+meter('school today',sum(byCat(ts,'school')),L.schoolDay)+meter('school this month',sum(byCat(ms,'school')),L.schoolMonth)+meter('essentials this month',sum(byCat(ms,'essentials')),L.essMonth)+meter('wants today',sum(byCat(ts,'wants')),L.wantsDay)+'</div>'+
+ '<div class="card"><div class="lbl" style="margin-bottom:10px">spending (today · '+monthName()+')</div>'+meter('allowance today',sum(ts),L.daily)+meter('school today',sum(byCat(ts,'school')),L.schoolDay)+meter('school this month',sum(byCat(ms,'school')),L.schoolMonth)+meter('essentials this month',sum(byCat(ms,'essentials')),L.essMonth)+meter('wants this month',sum(byCat(ts,'wants')),L.wantsMonth)+'</div>'+
  '<div class="card"><div class="lbl" style="margin-bottom:10px">saving</div>'+meter('saved today',sum(onDate(S.saves,t)),L.saveDay,1)+meter('saved this month',sum(inMonth(S.saves,ym)),L.saveMonth,1)+'</div>'
 }
 
