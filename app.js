@@ -1,6 +1,6 @@
 var KEY='punpun-allowance-diary';
 var CATS=['school','essentials','wants','other'];
-function defaults(){return{months:{},saves:[],goal:0,list:[],days:{},bank:[],lim:{daily:0,schoolDay:0,schoolMonth:0,essMonth:0,wantsMonth:0,saveMonth:0,saveDay:0}}}
+function defaults(){return{months:{},saves:[],goal:0,list:[],days:{},bank:[],lim:{daily:0,schoolDay:0,schoolMonth:0,essMonth:0,wantsMonth:0,saveMonth:0,ebMonth:0}}}
 function load(){var d=defaults(),o={},k;try{var r=localStorage.getItem(KEY);if(r)o=JSON.parse(r)||{}}catch(e){}
  for(k in d){if(o[k]!==undefined&&o[k]!==null)d[k]=o[k]}
  d.lim=Object.assign(defaults().lim,o.lim||{});return d}
@@ -67,16 +67,16 @@ function viewSpend(){
 
 function viewLimits(){
  var L=S.lim,all=allSp(),ms=inMonth(all,ym),t=dstr(new Date()),ts=onDate(all,t);
- var F=[['daily','allowance per day'],['schoolDay','school allowance per day'],['schoolMonth','school allowance per month'],['essMonth','essentials max per month'],['wantsMonth','wants allowance per month'],['saveMonth','savings goal per month'],['saveDay','savings goal per day']];
+ var F=[['daily','allowance per day'],['schoolDay','school allowance per day'],['schoolMonth','school allowance per month'],['essMonth','essentials allowance per month'],['wantsMonth','wants allowance per month'],['saveMonth','savings goal per month'],['ebMonth','emergency money deposit per month']];
  return nav()+'<div class="card"><b>my limits</b><div class="sub">0 or blank = no limit</div><div class="fields">'+F.map(function(f){return'<div><div class="lbl">'+f[1]+'</div><input type="number" inputmode="decimal" data-lim="'+f[0]+'" placeholder="0" value="'+(L[f[0]]||'')+'"></div>'}).join('')+'</div></div>'+
- '<div class="card"><div class="lbl" style="margin-bottom:10px">spending (today · '+monthName()+')</div>'+meter('allowance today',sum(ts),L.daily)+meter('school today',sum(byCat(ts,'school')),L.schoolDay)+meter('school this month',sum(byCat(ms,'school')),L.schoolMonth)+meter('essentials this month',sum(byCat(ms,'essentials')),L.essMonth)+meter('wants this month',sum(byCat(ts,'wants')),L.wantsMonth)+'</div>'+
- '<div class="card"><div class="lbl" style="margin-bottom:10px">saving</div>'+meter('saved today',sum(onDate(S.saves,t)),L.saveDay,1)+meter('saved this month',sum(inMonth(S.saves,ym)),L.saveMonth,1)+'</div>'
+ '<div class="card"><div class="lbl" style="margin-bottom:10px">spending (today · '+monthName()+')</div>'+meter('allowance today',sum(ts),L.daily)+meter('school today',sum(byCat(ts,'school')),L.schoolDay)+meter('school this month',sum(byCat(ms,'school')),L.schoolMonth)+meter('essentials this month',sum(byCat(ms,'essentials')),L.essMonth)+meter('wants this month',sum(byCat(ms,'wants')),L.wantsMonth)+'</div>'+
+ '<div class="card"><div class="lbl" style="margin-bottom:10px">saving</div>'+meter('emergency deposits this month',sum(inMonth(S.bank.filter(function(x){return x.type==='in'}),ym)),L.ebMonth,1)+meter('saved this month',sum(inMonth(S.saves,ym)),L.saveMonth,1)+'</div>'
 }
 
 function viewSave(){
  var tot=sum(S.saves),g=+S.goal||0,pc=g?Math.min(100,tot/g*100):0,L=S.lim,t=dstr(new Date());
  return hero(tot>0?'ok':'none','total saved',tot,tot?'small things add up.':'an empty jar.')+
- '<div class="card">'+meter('saved today',sum(onDate(S.saves,t)),L.saveDay,1)+meter('saved this month',sum(inMonth(S.saves,ym)),L.saveMonth,1)+'<div class="sub">goals are set in the limits tab</div></div>'+
+ '<div class="card">'+meter('saved this month',sum(inMonth(S.saves,ym)),L.saveMonth,1)+'<div class="sub">goals are set in the limits tab</div></div>'+
  '<div class="card"><div class="lbl">my big goal</div><input type="number" inputmode="decimal" id="goal" placeholder="how much?" value="'+(g||'')+'">'+
  (g?'<div class="prog"><i style="width:'+pc+'%"></i></div><div class="row"><span class="sub">'+Math.round(pc)+'%</span><span class="sub num">'+money(Math.max(0,g-tot))+' to go</span></div>':'')+'</div>'+
  '<div class="card"><b>put some away</b><div class="fields"><div><div class="lbl">amount</div><input type="number" inputmode="decimal" id="vAmt" placeholder="0"></div><div><div class="lbl">note</div><input type="text" id="vNote" placeholder="piggy bank"></div></div><button data-act="addSave">+ save it</button></div>'+
@@ -149,3 +149,4 @@ document.addEventListener('change',function(e){
 });
 render();
 if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})})}
+  
